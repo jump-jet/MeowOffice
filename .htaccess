@@ -1,0 +1,9 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^includes/ - [F]
+    RewriteRule ^sql/ - [F]
+    RewriteRule ^Dockerfile$ - [F]
+    RewriteRule ^docker-compose\.yml$ - [F]
+</IfModule>

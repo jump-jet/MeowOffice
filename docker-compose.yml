@@ -1,0 +1,36 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      MEOW_DB_HOST: db
+      MEOW_DB_PORT: 3306
+      MEOW_DB_NAME: meowoffice
+      MEOW_DB_USER: meow
+      MEOW_DB_PASS: meowpass
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/var/www/html
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: meowoffice
+      MYSQL_USER: meow
+      MYSQL_PASSWORD: meowpass
+      MYSQL_ROOT_PASSWORD: rootmeow
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-umeow", "-pmeowpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - meowoffice_mysql:/var/lib/mysql
+
+volumes:
+  meowoffice_mysql:
