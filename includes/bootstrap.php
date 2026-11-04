@@ -20,6 +20,10 @@ require_once __DIR__ . '/notify.php';
 require_once __DIR__ . '/animals.php';
 require_once __DIR__ . '/achievements.php';
 require_once __DIR__ . '/game.php';
+require_once __DIR__ . '/weather.php';
+require_once __DIR__ . '/health.php';
+require_once __DIR__ . '/charts.php';
+require_once __DIR__ . '/feed.php';
 require_once __DIR__ . '/layout.php';
 
 $script = basename($_SERVER['SCRIPT_NAME'] ?? '');

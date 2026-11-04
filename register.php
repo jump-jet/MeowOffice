@@ -66,7 +66,7 @@ render_header('Register', false);
 <section class="card auth-card">
     <div class="auth-art">
         <div>
-            <div class="mascot">🐰✨</div>
+            <div class="mascot auth-crew"><?php foreach (['frog', 'duck', 'sheep'] as $a): ?><?= animal_avatar($a, 'lg') ?><?php endforeach; ?></div>
             <h2>Join the litter</h2>
             <p>Pick a desk animal. They will sit beside your name forever.</p>
         </div>
@@ -82,14 +82,8 @@ render_header('Register', false);
             <label>Email <input name="email" type="email" value="<?= e($email) ?>" required></label>
             <label>Password <input name="password" type="password" minlength="8" required></label>
             <label>Confirm password <input name="confirm" type="password" minlength="8" required></label>
-            <div class="animals">
-                <?php foreach (animal_choices() as $key => $label): ?>
-                    <label>
-                        <input type="radio" name="animal" value="<?= e($key) ?>" <?= $animal === $key ? 'checked' : '' ?>>
-                        <?= animal_emoji($key) ?> <?= e($label) ?>
-                    </label>
-                <?php endforeach; ?>
-            </div>
+            <label>Pick your desk animal</label>
+            <?= animal_picker('animal', $animal) ?>
             <button class="btn-mint" type="submit">Create account</button>
         </form>
         <p class="links"><a href="login.php">Already have a badge?</a></p>

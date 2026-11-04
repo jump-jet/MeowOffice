@@ -8,7 +8,7 @@ declare(strict_types=1);
  * ensure_schema() on every request so existing installs upgrade themselves.
  * Bump SCHEMA_VERSION whenever you add a table or column below.
  */
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 4;
 
 function schema_tables(): array
 {
@@ -103,17 +103,44 @@ function schema_tables(): array
             CREATE TABLE IF NOT EXISTS game_scores (
               id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
               user_id INT UNSIGNED NOT NULL,
+              game VARCHAR(24) NOT NULL DEFAULT 'pounce',
               score INT UNSIGNED NOT NULL,
               created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
               INDEX idx_score_user (user_id, score),
               INDEX idx_score (score),
+              INDEX idx_game_score (game, score),
               CONSTRAINT fk_score_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB",
+
+        'announcements' => "
+            CREATE TABLE IF NOT EXISTS announcements (
+              id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+              title VARCHAR(120) NOT NULL,
+              body TEXT NOT NULL,
+              color ENUM('lemon', 'pink', 'mint', 'sky', 'lavender') NOT NULL DEFAULT 'lemon',
+              pinned TINYINT(1) NOT NULL DEFAULT 0,
+              author_id INT UNSIGNED NULL,
+              expires_on DATE NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              INDEX idx_announce_list (pinned, created_at),
+              CONSTRAINT fk_announce_author FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
+            ) ENGINE=InnoDB",
+
+        'announcement_reactions' => "
+            CREATE TABLE IF NOT EXISTS announcement_reactions (
+              announcement_id INT UNSIGNED NOT NULL,
+              user_id INT UNSIGNED NOT NULL,
+              reaction VARCHAR(16) NOT NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (announcement_id, user_id, reaction),
+              CONSTRAINT fk_react_announce FOREIGN KEY (announcement_id) REFERENCES announcements(id) ON DELETE CASCADE,
+              CONSTRAINT fk_react_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             ) ENGINE=InnoDB",
 
         'app_meta' => "
             CREATE TABLE IF NOT EXISTS app_meta (
               name VARCHAR(64) PRIMARY KEY,
-              value VARCHAR(255) NOT NULL
+              value TEXT NOT NULL
             ) ENGINE=InnoDB",
     ];
 }
@@ -142,6 +169,17 @@ function migrate(PDO $pdo): void
         $pdo->exec('ALTER TABLE users ADD COLUMN cat_avatar VARCHAR(32) NULL AFTER animal');
     }
 
+    // v4: one score table for every Arcade game.
+    if (!column_exists($pdo, 'game_scores', 'game')) {
+        $pdo->exec("ALTER TABLE game_scores ADD COLUMN game VARCHAR(24) NOT NULL DEFAULT 'pounce' AFTER user_id, ADD INDEX idx_game_score (game, score)");
+    }
+
+    // v3: app_meta stores JSON (weather cache), so it needs TEXT.
+    $stmt = $pdo->query("SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'app_meta' AND COLUMN_NAME = 'value'");
+    if (strtolower((string) $stmt->fetchColumn()) !== 'text') {
+        $pdo->exec('ALTER TABLE app_meta MODIFY value TEXT NOT NULL');
+    }
+
     $pdo->prepare('REPLACE INTO app_meta (name, value) VALUES (?, ?)')
         ->execute(['schema_version', (string) SCHEMA_VERSION]);
 }
@@ -157,4 +195,21 @@ function ensure_schema(): void
     if ($version < SCHEMA_VERSION) {
         migrate(db());
     }
+}
+
+function meta_get(string $name, ?string $default = null): ?string
+{
+    try {
+        $stmt = db()->prepare('SELECT value FROM app_meta WHERE name = ?');
+        $stmt->execute([$name]);
+        $value = $stmt->fetchColumn();
+        return $value === false ? $default : (string) $value;
+    } catch (Throwable $e) {
+        return $default;
+    }
+}
+
+function meta_set(string $name, string $value): void
+{
+    db()->prepare('REPLACE INTO app_meta (name, value) VALUES (?, ?)')->execute([$name, $value]);
 }

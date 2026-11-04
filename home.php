@@ -54,8 +54,12 @@ $stmt = $pdo->prepare("
 $stmt->execute([date('Y-m-d 00:00:00'), $today]);
 $banners = $stmt->fetchAll();
 
+$stmt = $pdo->prepare('SELECT id, title, body, color FROM announcements WHERE pinned = 1 AND (expires_on IS NULL OR expires_on >= ?) ORDER BY created_at DESC LIMIT 2');
+$stmt->execute([$today]);
+$pinnedNotes = $stmt->fetchAll();
+$weather = weather_current();
+
 $pendingApprovals = $admin ? (int) $pdo->query("SELECT COUNT(*) FROM users WHERE status = 'pending'")->fetchColumn() : 0;
-$leaderboard = game_leaderboard();
 
 $hour = (int) date('H');
 $greeting = $hour < 12 ? 'morning' : ($hour < 18 ? 'afternoon' : 'evening');
@@ -64,18 +68,23 @@ if ($taskCounts['overdue'] > 0) {
 } elseif ($taskCounts['pending'] > 0) {
     $mood = 'Your paw tasks are lined up like treats on a shelf.';
 } else {
-    $mood = 'Inbox zero, paws up. Maybe a quick round of Paperwork Pounce?';
+    $mood = 'Inbox zero, paws up. Maybe a quick break in the Arcade?';
 }
 
 render_header('Home');
 ?>
 <section class="card hero-card">
     <div>
-        <h1>Good <?= $greeting ?>, <?= e($me['name']) ?>.</h1>
+        <h1>Good <?= $greeting ?>, <?= e(rtrim($me['name'], '.!?')) ?>.</h1>
         <p><?= e($mood) ?></p>
-        <p class="muted"><?= e(date('l, F j')) ?></p>
+        <p class="muted"><?= e(date('l, F j')) ?>
+            <?php if (($weather['status'] ?? '') === 'ok'):
+                [$wIcon, $wLabel] = weather_code_info($weather['current']['code'], $weather['current']['day']); ?>
+                · <a href="dashboard.php"><?= $wIcon ?> <?= (int) $weather['current']['temp'] ?>°C <?= e(strtolower($wLabel)) ?> in <?= e(explode(',', $weather['location']['name'])[0]) ?></a>
+            <?php endif; ?>
+        </p>
     </div>
-    <div class="mascot"><?= user_emoji($me) ?></div>
+    <div class="mascot"><?= user_avatar($me, 'xl') ?></div>
 </section>
 
 <?php foreach ($banners as $banner): ?>
@@ -87,6 +96,13 @@ render_header('Home');
         <?php if ($banner['details']): ?><div class="small"><?= e($banner['details']) ?></div><?php endif; ?>
     </div>
 </div>
+<?php endforeach; ?>
+
+<?php foreach ($pinnedNotes as $note): ?>
+<a class="banner banner-note note-<?= e($note['color']) ?>" href="board.php#note-<?= (int) $note['id'] ?>">
+    <span class="event-icon">📌</span>
+    <div><strong><?= e($note['title']) ?></strong> <span class="muted">· <?= e(mb_strimwidth($note['body'], 0, 110, '…')) ?></span></div>
+</a>
 <?php endforeach; ?>
 
 <?php if ($pendingApprovals > 0): ?>
@@ -174,39 +190,5 @@ render_header('Home');
     </article>
 </section>
 
-<section class="card game-card" style="margin-top:20px;" id="game">
-    <div class="game-main">
-        <div class="cal-head">
-            <h2>🎮 Paperwork Pounce</h2>
-            <span class="tabs-spacer"></span>
-            <span class="chip chip-soft">Best: <span id="pounce-best"><?= $stats['best_score'] ?></span></span>
-        </div>
-        <p class="muted small">Catch falling paperwork 📄 (+1) and fish 🐟 (+5). Dodge spilled coffee ☕. Move with ← → / A D, the mouse, or by touch.</p>
-        <div class="game-wrap">
-            <canvas id="pounce" width="720" height="400"
-                    data-endpoint="game-score.php"
-                    data-csrf="<?= e(csrf_token()) ?>"
-                    data-player="<?= e(user_emoji($me)) ?>"
-                    aria-label="Paperwork Pounce game"></canvas>
-            <div class="game-overlay" id="pounce-overlay">
-                <div class="game-title">🐱📄</div>
-                <strong id="pounce-message">Ready to clear the in-tray?</strong>
-                <button type="button" id="pounce-start">Play</button>
-            </div>
-        </div>
-    </div>
-    <aside class="game-side">
-        <h3>🏆 Top pouncers</h3>
-        <ol class="leaderboard" id="pounce-board">
-            <?php foreach ($leaderboard as $row): ?>
-                <li><span><?= $row['emoji'] ?> <?= e($row['name']) ?></span><strong><?= $row['best'] ?></strong></li>
-            <?php endforeach; ?>
-            <?php if (!$leaderboard): ?>
-                <li class="muted">No scores yet. Be the first!</li>
-            <?php endif; ?>
-        </ol>
-        <p class="muted small">Score 50 and 150 to unlock new cat avatars.</p>
-    </aside>
-</section>
 <?php
-render_footer(['assets/js/game.js']);
+render_footer();

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 /*
- * JSON endpoint for Paperwork Pounce (assets/js/game.js).
- * POST score + csrf  -> saves the run, returns best score, leaderboard and
+ * JSON endpoint for every Arcade game (assets/js/arcade.js).
+ * POST game + score + csrf  -> saves the run, returns best score, leaderboard and
  * any achievements unlocked by it.
  */
 
@@ -25,16 +25,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 csrf_verify();
 
-const MAX_SCORE = 5000;
-const MIN_SECONDS_BETWEEN_RUNS = 5;
+const MIN_SECONDS_BETWEEN_RUNS = 3;
+
+$games = game_catalog();
+$game = (string) ($_POST['game'] ?? 'pounce');
+if (!isset($games[$game])) {
+    http_response_code(422);
+    echo json_encode(['error' => 'Unknown game.']);
+    exit;
+}
 
 $myId = (int) $me['id'];
-$score = max(0, min(MAX_SCORE, (int) ($_POST['score'] ?? 0)));
+$score = max(0, min($games[$game]['max'], (int) ($_POST['score'] ?? 0)));
 $pdo = db();
 
-// Light rate-limit so the leaderboard can't be spammed from the console.
-$stmt = $pdo->prepare('SELECT TIMESTAMPDIFF(SECOND, MAX(created_at), NOW()) FROM game_scores WHERE user_id = ?');
-$stmt->execute([$myId]);
+// Light rate-limit so leaderboards can't be spammed from the console.
+$stmt = $pdo->prepare('SELECT TIMESTAMPDIFF(SECOND, MAX(created_at), NOW()) FROM game_scores WHERE user_id = ? AND game = ?');
+$stmt->execute([$myId, $game]);
 $since = $stmt->fetchColumn();
 if ($since !== null && $since !== false && (int) $since < MIN_SECONDS_BETWEEN_RUNS) {
     http_response_code(429);
@@ -42,12 +49,9 @@ if ($since !== null && $since !== false && (int) $since < MIN_SECONDS_BETWEEN_RU
     exit;
 }
 
-$stmt = $pdo->prepare('SELECT COALESCE(MAX(score), 0) FROM game_scores WHERE user_id = ?');
-$stmt->execute([$myId]);
-$previousBest = (int) $stmt->fetchColumn();
-
-$pdo->prepare('INSERT INTO game_scores (user_id, score) VALUES (?, ?)')->execute([$myId, $score]);
-log_activity($myId, 'game_play', 'Scored ' . $score . ' in Paperwork Pounce');
+$previousBest = game_best($myId, $game);
+$pdo->prepare('INSERT INTO game_scores (user_id, game, score) VALUES (?, ?, ?)')->execute([$myId, $game, $score]);
+log_activity($myId, 'game_play', 'Scored ' . $score . ' in ' . $games[$game]['title']);
 $unlocked = sync_achievements($me);
 
 echo json_encode([
@@ -55,5 +59,5 @@ echo json_encode([
     'best' => max($previousBest, $score),
     'newBest' => $score > $previousBest,
     'unlocked' => $unlocked,
-    'leaderboard' => game_leaderboard(),
+    'leaderboard' => game_leaderboard($game),
 ]);

@@ -109,7 +109,7 @@ render_header('Notifications');
 <section class="grid <?= $admin ? 'grid-cal' : '' ?>">
     <article class="card">
         <div class="cal-head">
-            <h1>Notification Center</h1>
+            <h1 class="notice-title"><?= notification_bell_svg('bell-icon bell-icon-lg') ?> Notification Center</h1>
             <span class="tabs-spacer"></span>
             <form method="post">
                 <?= csrf_field() ?>

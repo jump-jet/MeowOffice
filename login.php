@@ -57,7 +57,7 @@ render_header('Login', false);
 <section class="card auth-card">
     <div class="auth-art">
         <div>
-            <div class="mascot">🐱💼</div>
+            <div class="mascot auth-crew"><?php foreach (['bunny', 'cat', 'panda'] as $a): ?><?= animal_avatar($a, 'lg') ?><?php endforeach; ?></div>
             <h2>MeowOffice</h2>
             <p>A cozy back office for humans who like cute animals a little too much.</p>
         </div>

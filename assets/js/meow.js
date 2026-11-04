@@ -18,3 +18,20 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
 document.querySelectorAll(".paw-pop").forEach((pop) => {
   setTimeout(() => pop.classList.add("paw-pop-out"), 5200);
 });
+
+
+// "More" nav menu: close on outside click, Escape, or when focus leaves it.
+document.querySelectorAll(".nav-more").forEach((menu) => {
+  document.addEventListener("click", (event) => {
+    if (menu.open && !menu.contains(event.target)) menu.open = false;
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && menu.open) {
+      menu.open = false;
+      menu.querySelector("summary").focus();
+    }
+  });
+  menu.addEventListener("focusout", (event) => {
+    if (menu.open && event.relatedTarget && !menu.contains(event.relatedTarget)) menu.open = false;
+  });
+});

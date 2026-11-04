@@ -90,16 +90,41 @@ CREATE TABLE IF NOT EXISTS user_achievements (
 CREATE TABLE IF NOT EXISTS game_scores (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL,
+  game VARCHAR(24) NOT NULL DEFAULT 'pounce',
   score INT UNSIGNED NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_score_user (user_id, score),
   INDEX idx_score (score),
+  INDEX idx_game_score (game, score),
   CONSTRAINT fk_score_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS announcements (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(120) NOT NULL,
+  body TEXT NOT NULL,
+  color ENUM('lemon', 'pink', 'mint', 'sky', 'lavender') NOT NULL DEFAULT 'lemon',
+  pinned TINYINT(1) NOT NULL DEFAULT 0,
+  author_id INT UNSIGNED NULL,
+  expires_on DATE NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_announce_list (pinned, created_at),
+  CONSTRAINT fk_announce_author FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS announcement_reactions (
+  announcement_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  reaction VARCHAR(16) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (announcement_id, user_id, reaction),
+  CONSTRAINT fk_react_announce FOREIGN KEY (announcement_id) REFERENCES announcements(id) ON DELETE CASCADE,
+  CONSTRAINT fk_react_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS app_meta (
   name VARCHAR(64) PRIMARY KEY,
-  value VARCHAR(255) NOT NULL
+  value TEXT NOT NULL
 ) ENGINE=InnoDB;
 
-REPLACE INTO app_meta (name, value) VALUES ("schema_version", "2");
+REPLACE INTO app_meta (name, value) VALUES ("schema_version", "4");

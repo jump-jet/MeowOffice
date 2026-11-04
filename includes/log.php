@@ -38,6 +38,10 @@ function action_labels(): array
         'achievement_unlock' => ['🏆', 'Unlocked an achievement'],
         'avatar_change' => ['😺', 'Changed avatar'],
         'game_play' => ['🎮', 'Played Paperwork Pounce'],
+        'announcement_post' => ['📌', 'Posted an announcement'],
+        'announcement_delete' => ['🧹', 'Removed an announcement'],
+        'profile_update' => ['🪞', 'Updated profile'],
+        'weather_city' => ['🌦️', 'Changed weather city'],
     ];
 }
 

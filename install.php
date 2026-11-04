@@ -83,7 +83,7 @@ render_header('Install', false);
 <section class="card auth-card">
     <div class="auth-art">
         <div>
-            <div class="mascot">🐱📦</div>
+            <div class="mascot auth-crew"><?php foreach (['owl', 'cat', 'dino'] as $a): ?><?= animal_avatar($a, 'lg') ?><?php endforeach; ?></div>
             <h2>Unpack MeowOffice</h2>
             <p>Create the MySQL database, then the first admin kitten.</p>
         </div>
@@ -105,14 +105,8 @@ render_header('Install', false);
             <label>Name <input name="name" value="<?= e($name) ?>" required></label>
             <label>Email <input name="email" type="email" value="<?= e($email) ?>" required></label>
             <label>Password <input name="password" type="password" minlength="8" required></label>
-            <div class="animals">
-                <?php foreach (animal_choices() as $key => $label): ?>
-                    <label>
-                        <input type="radio" name="animal" value="<?= e($key) ?>" <?= $animal === $key ? 'checked' : '' ?>>
-                        <?= animal_emoji($key) ?> <?= e($label) ?>
-                    </label>
-                <?php endforeach; ?>
-            </div>
+            <label>Pick your desk animal</label>
+            <?= animal_picker('animal', $animal) ?>
             <button type="submit">Open the office</button>
         </form>
         <p class="muted">After install, edit <code>includes/config.php</code> if your MySQL settings differ from the defaults.</p>

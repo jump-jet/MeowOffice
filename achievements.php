@@ -9,22 +9,6 @@ $myId = (int) $me['id'];
 $admin = is_admin($me);
 $pdo = db();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    csrf_verify();
-    $choice = (string) ($_POST['cat_avatar'] ?? '');
-    if ($choice === '') {
-        $pdo->prepare('UPDATE users SET cat_avatar = NULL WHERE id = ?')->execute([$myId]);
-        flash('ok', 'Back to your trusty desk animal.');
-    } elseif (in_array($choice, unlocked_avatars($myId), true)) {
-        $pdo->prepare('UPDATE users SET cat_avatar = ? WHERE id = ?')->execute([$choice, $myId]);
-        log_activity($myId, 'avatar_change', 'Now wearing ' . cat_avatars()[$choice][1]);
-        flash('ok', 'Looking sharp, ' . cat_avatars()[$choice][1] . '!');
-    } else {
-        flash('err', 'That avatar is still locked.');
-    }
-    redirect('achievements.php');
-}
-
 $fresh = sync_achievements($me);
 if ($fresh) {
     flash('paw', 'Achievement unlocked: ' . implode(', ', $fresh) . '!');
@@ -38,7 +22,7 @@ $defs = array_filter(achievement_defs(), function (array $def) use ($admin): boo
     return $admin || !$def['admin'];
 });
 
-$statKeys = ['tasks_completed', 'logins', 'games', 'best_score'];
+$statKeys = ['tasks_completed', 'logins', 'games', 'best_score', 'arcade_games'];
 if ($admin) {
     $statKeys = array_merge($statKeys, ['tasks_created', 'events_created', 'approvals']);
 }
@@ -69,7 +53,7 @@ render_header('Achievements');
         <p>You have unlocked <strong><?= count(array_intersect_key($unlocked, $defs)) ?></strong> of <?= count($defs) ?> achievements.</p>
         <div class="bar"><span style="width: <?= (int) round(count(array_intersect_key($unlocked, $defs)) / max(1, count($defs)) * 100) ?>%"></span></div>
     </div>
-    <div class="mascot"><?= user_emoji($me) ?></div>
+    <div class="mascot"><?= user_avatar($me, 'xl') ?></div>
 </section>
 
 <section class="card" style="margin-top:20px;">
@@ -102,10 +86,10 @@ render_header('Achievements');
                 <strong><?= e($def['title']) ?><?= $def['admin'] ? ' <span class="chip chip-admin">admin</span>' : '' ?></strong>
                 <span class="muted small"><?= e($def['desc']) ?></span>
                 <?php if ($got): ?>
-                    <span class="small">Unlocked <?= e(nice_date($unlocked[$key])) ?> · <?= $avatar[0] ?> <?= e($avatar[1]) ?></span>
+                    <span class="small ach-reward"><?= cat_avatar_tile($def['avatar'], 'xs') ?> Unlocked <?= e(nice_date($unlocked[$key])) ?> · <?= e($avatar[1]) ?></span>
                 <?php else: ?>
                     <div class="bar"><span style="width: <?= (int) round($progress * 100) ?>%"></span></div>
-                    <span class="muted small"><?= min($stats[$def['stat']], $def['goal']) ?> / <?= $def['goal'] ?> · unlocks <?= $avatar[0] ?></span>
+                    <span class="muted small"><?= min($stats[$def['stat']], $def['goal']) ?> / <?= $def['goal'] ?> · unlocks a new cat</span>
                 <?php endif; ?>
             </article>
         <?php endforeach; ?>
@@ -113,26 +97,21 @@ render_header('Achievements');
 </section>
 
 <section class="card" style="margin-top:20px;">
-    <h2>Cat avatar collection</h2>
-    <p class="muted">Unlock achievements to collect cats. Wear any one you have earned.</p>
-    <form method="post" class="avatar-picker">
-        <?= csrf_field() ?>
-        <label class="avatar-option <?= empty($me['cat_avatar']) ? 'chosen' : '' ?>">
-            <input type="radio" name="cat_avatar" value="" <?= empty($me['cat_avatar']) ? 'checked' : '' ?>>
-            <?= animal_avatar($me['animal'], 'md') ?>
-            <span class="small">Desk animal</span>
-        </label>
+    <div class="cal-head">
+        <h2>Cat collection</h2>
+        <span class="tabs-spacer"></span>
+        <a class="btn btn-sm" href="profile.php">Wear an avatar</a>
+    </div>
+    <p class="muted">Every achievement unlocks a collectible cat. You have <?= count($myAvatars) ?> of <?= count(cat_avatars()) ?>.</p>
+    <div class="animal-picker">
         <?php foreach (cat_avatars() as $key => [$emoji, $label]):
-            $owned = in_array($key, $myAvatars, true);
-        ?>
-            <label class="avatar-option <?= $owned ? '' : 'locked' ?> <?= ($me['cat_avatar'] ?? '') === $key ? 'chosen' : '' ?>" title="<?= e($owned ? $label : 'Locked') ?>">
-                <input type="radio" name="cat_avatar" value="<?= e($key) ?>" <?= $owned ? '' : 'disabled' ?> <?= ($me['cat_avatar'] ?? '') === $key ? 'checked' : '' ?>>
-                <span class="avatar avatar-md avatar-cat-pack"><?= $owned ? $emoji : '❔' ?></span>
-                <span class="small"><?= e($owned ? $label : '???') ?></span>
-            </label>
+            $owned = in_array($key, $myAvatars, true); ?>
+            <div class="pick <?= $owned ? '' : 'locked' ?> <?= ($me['cat_avatar'] ?? '') === $key ? 'chosen' : '' ?>">
+                <?= cat_avatar_tile($key, 'lg') ?>
+                <span><?= e($owned ? $label : '???') ?></span>
+            </div>
         <?php endforeach; ?>
-        <button type="submit">Wear selected avatar</button>
-    </form>
+    </div>
 </section>
 
 <?php if ($admin): ?>

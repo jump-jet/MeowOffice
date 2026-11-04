@@ -54,6 +54,7 @@ function notification_types(): array
         'admin' => ['🛠️', 'Admin activity'],
         'task' => ['🐾', 'Tasks'],
         'event' => ['📅', 'Calendar'],
+        'board' => ['📌', 'Announcements'],
         'achievement' => ['🏆', 'Achievements'],
     ];
 }

@@ -6,13 +6,47 @@ function nav_items(): array
 {
     return [
         'home.php' => 'Home',
+        'dashboard.php' => 'Dashboard',
         'tasks.php' => 'Tasks',
         'calendar.php' => 'Calendar',
+        'board.php' => 'Board',
+        'arcade.php' => 'Arcade',
         'achievements.php' => 'Awards',
-        'report.php' => 'Report',
-        'users.php' => 'Users',
-        'history.php' => 'History',
     ];
+}
+
+/** Links tucked into the "More" menu. */
+function nav_more_items(bool $admin): array
+{
+    $items = [
+        'profile.php' => '🐾 My profile & avatar',
+        'users.php' => '👥 Users',
+        'history.php' => '📜 History',
+    ];
+    if ($admin) {
+        $items['health.php'] = '🩺 System health';
+    }
+    $items['change-password.php'] = '🔐 Password';
+
+    return $items;
+}
+
+/** The Notification Center icon: a golden cat-bell (inline SVG, no user input). */
+function notification_bell_svg(string $class = 'bell-icon'): string
+{
+    $ink = '#4a2f25';
+
+    return '<svg class="' . $class . '" viewBox="0 0 32 32" aria-hidden="true" focusable="false">'
+        . '<path d="M8.6 13 L7.6 4.2 L13.8 8.6 Z" fill="#ffc94d" stroke="' . $ink . '" stroke-width="1.8" stroke-linejoin="round"/>'
+        . '<path d="M23.4 13 L24.4 4.2 L18.2 8.6 Z" fill="#ffc94d" stroke="' . $ink . '" stroke-width="1.8" stroke-linejoin="round"/>'
+        . '<path d="M9.6 7.4 L12 9 L9.9 10.6 Z M22.4 7.4 L20 9 L22.1 10.6 Z" fill="#ff9fb6"/>'
+        . '<path d="M16 7 C10.6 7 8.4 11 8.4 15.6 V19.8 L6.4 23.4 H25.6 L23.6 19.8 V15.6 C23.6 11 21.4 7 16 7 Z" fill="#ffd34d" stroke="' . $ink . '" stroke-width="1.8" stroke-linejoin="round"/>'
+        . '<path d="M10.4 12.4 Q12 9.6 14.6 9" fill="none" stroke="#fff3c4" stroke-width="1.6" stroke-linecap="round"/>'
+        . '<circle cx="12.9" cy="15.6" r="1.35" fill="' . $ink . '"/><circle cx="19.1" cy="15.6" r="1.35" fill="' . $ink . '"/>'
+        . '<ellipse cx="11" cy="18.4" rx="1.6" ry="0.9" fill="#ff8fab" opacity="0.8"/><ellipse cx="21" cy="18.4" rx="1.6" ry="0.9" fill="#ff8fab" opacity="0.8"/>'
+        . '<path d="M14.4 18 Q15.2 19.2 16 18 Q16.8 19.2 17.6 18" fill="none" stroke="' . $ink . '" stroke-width="1.3" stroke-linecap="round"/>'
+        . '<circle cx="16" cy="25.6" r="2.3" fill="#ff7a90" stroke="' . $ink . '" stroke-width="1.6"/>'
+        . '</svg>';
 }
 
 function render_header(string $title, bool $authed = true): void
@@ -51,16 +85,27 @@ function render_header(string $title, bool $authed = true): void
         <?php foreach (nav_items() as $href => $label): ?>
             <a href="<?= e($href) ?>" class="<?= $current === $href ? 'active' : '' ?>"><?= e($label) ?></a>
         <?php endforeach; ?>
+        <?php $more = nav_more_items(is_admin($user)); ?>
+        <details class="nav-more <?= isset($more[$current]) ? 'active' : '' ?>">
+            <summary>More</summary>
+            <div class="nav-menu">
+                <?php foreach ($more as $href => $label): ?>
+                    <a href="<?= e($href) ?>" class="<?= $current === $href ? 'active' : '' ?>"><?= e($label) ?></a>
+                <?php endforeach; ?>
+            </div>
+        </details>
     </nav>
     <div class="who">
-        <a class="bell <?= $current === 'notifications.php' ? 'active' : '' ?>" href="notifications.php" title="Notification Center">
-            🔔<?php if ($unread > 0): ?><span class="bell-count"><?= $unread > 99 ? '99+' : $unread ?></span><?php endif; ?>
+        <a class="bell <?= $current === 'notifications.php' ? 'active' : '' ?> <?= $unread > 0 ? 'bell-ringing' : '' ?>" href="notifications.php" title="Notification Center<?= $unread > 0 ? ' · ' . $unread . ' unread' : '' ?>" aria-label="Notification Center<?= $unread > 0 ? ', ' . $unread . ' unread' : '' ?>">
+            <?= notification_bell_svg() ?><?php if ($unread > 0): ?><span class="bell-count"><?= $unread > 99 ? '99+' : $unread ?></span><?php endif; ?>
         </a>
-        <?= user_avatar($user, 'sm') ?>
-        <div>
-            <strong><?= e($user['name']) ?></strong>
-            <small><?= e($user['role']) ?> · <a href="change-password.php">password</a></small>
-        </div>
+        <a class="who-link" href="profile.php" title="Change your avatar">
+            <?= user_avatar($user, 'sm') ?>
+            <span>
+                <strong><?= e($user['name']) ?></strong>
+                <small><?= e($user['role']) ?></small>
+            </span>
+        </a>
         <a class="btn btn-ghost" href="logout.php">Log out</a>
     </div>
 </header>
