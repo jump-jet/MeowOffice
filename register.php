@@ -50,18 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$errors) {
         $stmt = db()->prepare(
-            'INSERT INTO users (name, email, password_hash, role, animal) VALUES (?, ?, ?, ?, ?)'
+            "INSERT INTO users (name, email, password_hash, role, status, animal) VALUES (?, ?, ?, 'staff', 'pending', ?)"
         );
-        $stmt->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT), 'staff', $animal]);
+        $stmt->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT), $animal]);
         $userId = (int) db()->lastInsertId();
-        $stmt = db()->prepare('SELECT * FROM users WHERE id = ?');
-        $stmt->execute([$userId]);
-        $user = $stmt->fetch();
-        login_user($user);
-        log_activity($userId, 'register', 'Joined MeowOffice as staff');
-        flash('ok', 'Welcome to the office, ' . $name . '!');
-        header('Location: report.php');
-        exit;
+        log_activity($userId, 'register', 'Asked to join MeowOffice as staff');
+        notify_admins('registration', 'New sign-up: ' . $name, $email . ' is waiting for approval.', 'notifications.php#approvals');
+        flash('ok', 'Thanks, ' . $name . '! An admin will approve your account soon, then you can log in.');
+        redirect('login.php');
     }
 }
 

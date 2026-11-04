@@ -23,7 +23,7 @@ $countStmt->execute($params);
 $total = (int) $countStmt->fetchColumn();
 $pages = max(1, (int) ceil($total / $perPage));
 
-$sql = "SELECT l.*, u.name, u.animal
+$sql = "SELECT l.*, u.name, u.animal, u.cat_avatar
         FROM activity_logs l
         LEFT JOIN users u ON u.id = l.user_id
         WHERE $where
@@ -33,7 +33,10 @@ $stmt = db()->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll();
 
-$actions = db()->query('SELECT DISTINCT action FROM activity_logs ORDER BY action')->fetchAll();
+$actions = db()->query('SELECT DISTINCT action FROM activity_logs')->fetchAll(PDO::FETCH_COLUMN);
+usort($actions, function (string $a, string $b): int {
+    return strcmp(action_label($a, false), action_label($b, false));
+});
 
 render_header('History');
 ?>
@@ -43,9 +46,9 @@ render_header('History');
     <form method="get" class="form" style="grid-template-columns: 1fr auto; display:grid; gap:12px; margin: 16px 0;">
         <select name="action">
             <option value="">All actions</option>
-            <?php foreach ($actions as $row): ?>
-                <option value="<?= e($row['action']) ?>" <?= $action === $row['action'] ? 'selected' : '' ?>>
-                    <?= e($row['action']) ?>
+            <?php foreach ($actions as $value): ?>
+                <option value="<?= e($value) ?>" <?= $action === $value ? 'selected' : '' ?>>
+                    <?= e(action_label($value)) ?>
                 </option>
             <?php endforeach; ?>
         </select>
@@ -68,11 +71,11 @@ render_header('History');
                     <td><?= e($row['created_at']) ?></td>
                     <td>
                         <span class="user-cell">
-                            <?= animal_avatar($row['animal'] ?: 'cat', 'sm') ?>
+                            <?= user_avatar(['animal' => $row['animal'] ?: 'cat', 'cat_avatar' => $row['cat_avatar']], 'sm') ?>
                             <?= e($row['name'] ?: 'Guest') ?>
                         </span>
                     </td>
-                    <td><span class="chip"><?= e($row['action']) ?></span></td>
+                    <td><span class="chip chip-action"><?= e(action_label($row['action'])) ?></span></td>
                     <td><?= e($row['details']) ?></td>
                     <td><?= e($row['ip']) ?></td>
                 </tr>

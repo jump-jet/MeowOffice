@@ -10,7 +10,7 @@ if (!db_installed()) {
 }
 
 if (current_user()) {
-    header('Location: report.php');
+    header('Location: home.php');
     exit;
 }
 

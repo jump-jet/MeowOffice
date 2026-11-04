@@ -52,7 +52,7 @@ render_header('Report');
         <p><?= e($mood) ?></p>
         <p class="muted">MeowOffice report for <?= e(date('l, F j')) ?>.</p>
     </div>
-    <div class="mascot"><?= animal_emoji($me['animal']) ?></div>
+    <div class="mascot"><?= user_emoji($me) ?></div>
 </section>
 
 <section class="grid grid-4" style="margin-top:20px;">
@@ -85,7 +85,7 @@ render_header('Report');
     <article class="card">
         <h2>What the office has been doing</h2>
         <?php foreach ($actionCounts as $row): ?>
-            <p><?= e($row['action']) ?> · <?= (int) $row['total'] ?></p>
+            <p><?= e(action_label($row['action'])) ?> · <?= (int) $row['total'] ?></p>
             <div class="bar"><span style="width: <?= (int) round((int) $row['total'] / $actionMax * 100) ?>%"></span></div>
         <?php endforeach; ?>
         <?php if (!$actionCounts): ?>

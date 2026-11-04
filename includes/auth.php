@@ -13,7 +13,7 @@ function current_user(): ?array
         return $user;
     }
 
-    $stmt = db()->prepare('SELECT id, name, email, role, animal, created_at, last_login_at FROM users WHERE id = ?');
+    $stmt = db()->prepare("SELECT id, name, email, role, status, animal, cat_avatar, created_at, last_login_at FROM users WHERE id = ? AND status = 'active'");
     $stmt->execute([(int) $_SESSION['user_id']]);
     $found = $stmt->fetch();
     $user = $found ?: null;
@@ -32,10 +32,33 @@ function require_login(): array
     return $user;
 }
 
+function is_admin(?array $user): bool
+{
+    return $user !== null && ($user['role'] ?? '') === 'admin';
+}
+
+function require_admin(): array
+{
+    $user = require_login();
+    if (!is_admin($user)) {
+        flash('err', 'Only admin cats can do that.');
+        header('Location: home.php');
+        exit;
+    }
+
+    return $user;
+}
+
+function redirect(string $to): void
+{
+    header('Location: ' . $to);
+    exit;
+}
+
 function guest_only(): void
 {
     if (current_user()) {
-        header('Location: report.php');
+        header('Location: home.php');
         exit;
     }
 }

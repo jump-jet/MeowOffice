@@ -23,7 +23,7 @@ services:
       MYSQL_PASSWORD: meowpass
       MYSQL_ROOT_PASSWORD: rootmeow
     ports:
-      - "3306:3306"
+      - "3307:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-umeow", "-pmeowpass"]
       interval: 5s
